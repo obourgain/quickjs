@@ -171,11 +171,11 @@ endif
 
 all: $(OBJDIR) $(OBJDIR)/quickjs.check.o $(OBJDIR)/qjs.check.o $(PROGS)
 
-QJS_LIB_OBJS=$(OBJDIR)/quickjs.o $(OBJDIR)/libregexp.o $(OBJDIR)/libunicode.o $(OBJDIR)/cutils.o $(OBJDIR)/quickjs-libc.o
+QJS_LIB_OBJS=$(OBJDIR)/quickjs.wasm $(OBJDIR)/libregexp.wasm $(OBJDIR)/libunicode.wasm $(OBJDIR)/cutils.wasm $(OBJDIR)/quickjs-libc.wasm
 
-QJS_OBJS=$(OBJDIR)/qjs.o $(QJS_LIB_OBJS) #$(OBJDIR)/repl.o
+QJS_OBJS=$(OBJDIR)/qjs.wasm $(QJS_LIB_OBJS) #$(OBJDIR)/repl.o
 ifdef CONFIG_BIGNUM
-QJS_LIB_OBJS+=$(OBJDIR)/libbf.o 
+QJS_LIB_OBJS+=$(OBJDIR)/libbf.wasm
 #QJS_OBJS+=$(OBJDIR)/qjscalc.o
 endif
 
@@ -245,8 +245,8 @@ endif # CONFIG_LTO
 #	$(QJSC) -fbignum -c -o $@ qjscalc.js
 
 ifneq ($(wildcard unicode/UnicodeData.txt),)
-$(OBJDIR)/libunicode.o $(OBJDIR)/libunicode.m32.o $(OBJDIR)/libunicode.m32s.o \
-    $(OBJDIR)/libunicode.nolto.o: libunicode-table.h
+$(OBJDIR)/libunicode.wasm $(OBJDIR)/libunicode.m32.wasm $(OBJDIR)/libunicode.m32s.wasm \
+    $(OBJDIR)/libunicode.nolto.wasm: libunicode-table.h
 
 libunicode-table.h: unicode_gen
 	./unicode_gen unicode $@
