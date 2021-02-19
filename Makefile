@@ -22,6 +22,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+CONFIG_CLANG=y
+
 ifeq ($(shell uname -s),Darwin)
 CONFIG_DARWIN=y
 endif
@@ -64,8 +66,8 @@ else
   EXE=
 endif
 ifdef CONFIG_CLANG
-  HOST_CC=clang
-  CC=$(CROSS_PREFIX)clang
+  HOST_CC=/home/olivier/wasi-sdk-12.0/bin/clang
+  CC=$(CROSS_PREFIX)/home/olivier/wasi-sdk-12.0/bin/clang
   CFLAGS=-g -Wall -MMD -MF $(OBJDIR)/$(@F).d
   CFLAGS += -Wextra
   CFLAGS += -Wno-sign-compare
@@ -75,6 +77,9 @@ ifdef CONFIG_CLANG
   CFLAGS += -Wwrite-strings
   CFLAGS += -Wchar-subscripts -funsigned-char
   CFLAGS += -MMD -MF $(OBJDIR)/$(@F).d
+
+  CFLAGS += --target=wasm32-wasi --sysroot=/home/olivier/wasi-sdk-12.0/share/wasi-sysroot -v
+
   ifdef CONFIG_DEFAULT_AR
     AR=$(CROSS_PREFIX)ar
   else
@@ -126,24 +131,24 @@ ifdef CONFIG_ASAN
 CFLAGS+=-fsanitize=address -fno-omit-frame-pointer
 LDFLAGS+=-fsanitize=address -fno-omit-frame-pointer
 endif
-ifdef CONFIG_WIN32
+#ifdef CONFIG_WIN32
 LDEXPORT=
-else
-LDEXPORT=-rdynamic
-endif
+#else
+#LDEXPORT=-rdynamic
+#endif
 
-PROGS=qjs$(EXE) qjsc$(EXE) run-test262
-ifneq ($(CROSS_PREFIX),)
-QJSC_CC=gcc
-QJSC=./host-qjsc
-PROGS+=$(QJSC)
-else
-QJSC_CC=$(CC)
-QJSC=./qjsc$(EXE)
-endif
-ifndef CONFIG_WIN32
-PROGS+=qjscalc
-endif
+PROGS=qjs$(EXE) #qjsc$(EXE) run-test262
+#ifneq ($(CROSS_PREFIX),)
+#QJSC_CC=gcc
+#QJSC=./host-qjsc
+#PROGS+=$(QJSC)
+#else
+#QJSC_CC=$(CC)
+#QJSC=./qjsc$(EXE)
+#endif
+#ifndef CONFIG_WIN32
+#PROGS+=qjscalc
+#endif
 ifdef CONFIG_M32
 PROGS+=qjs32 qjs32_s
 endif
@@ -157,9 +162,9 @@ ifeq ($(CROSS_PREFIX),)
 ifdef CONFIG_ASAN
 PROGS+=
 else
-PROGS+=examples/hello examples/hello_module examples/test_fib
+#PROGS+=examples/hello examples/hello_module examples/test_fib
 ifndef CONFIG_DARWIN
-PROGS+=examples/fib.so examples/point.so
+#PROGS+=examples/fib.so examples/point.so
 endif
 endif
 endif
@@ -168,20 +173,20 @@ all: $(OBJDIR) $(OBJDIR)/quickjs.check.o $(OBJDIR)/qjs.check.o $(PROGS)
 
 QJS_LIB_OBJS=$(OBJDIR)/quickjs.o $(OBJDIR)/libregexp.o $(OBJDIR)/libunicode.o $(OBJDIR)/cutils.o $(OBJDIR)/quickjs-libc.o
 
-QJS_OBJS=$(OBJDIR)/qjs.o $(OBJDIR)/repl.o $(QJS_LIB_OBJS)
+QJS_OBJS=$(OBJDIR)/qjs.o $(QJS_LIB_OBJS) #$(OBJDIR)/repl.o
 ifdef CONFIG_BIGNUM
 QJS_LIB_OBJS+=$(OBJDIR)/libbf.o 
-QJS_OBJS+=$(OBJDIR)/qjscalc.o
+#QJS_OBJS+=$(OBJDIR)/qjscalc.o
 endif
 
-HOST_LIBS=-lm -ldl -lpthread
-LIBS=-lm
-ifndef CONFIG_WIN32
-LIBS+=-ldl -lpthread
-endif
+HOST_LIBS=#-lm -ldl -lpthread
+LIBS=#-lm
+#ifndef CONFIG_WIN32
+#LIBS+=-ldl -lpthread
+#endif
 
 $(OBJDIR):
-	mkdir -p $(OBJDIR) $(OBJDIR)/examples $(OBJDIR)/tests
+	mkdir -p $(OBJDIR) $(OBJDIR)/tests # $(OBJDIR)/examples
 
 qjs$(EXE): $(QJS_OBJS)
 	$(CC) $(LDFLAGS) $(LDEXPORT) -o $@ $^ $(LIBS)
@@ -189,35 +194,35 @@ qjs$(EXE): $(QJS_OBJS)
 qjs-debug$(EXE): $(patsubst %.o, %.debug.o, $(QJS_OBJS))
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-qjsc$(EXE): $(OBJDIR)/qjsc.o $(QJS_LIB_OBJS)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+#qjsc$(EXE): $(OBJDIR)/qjsc.o $(QJS_LIB_OBJS)
+#	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 ifneq ($(CROSS_PREFIX),)
 
-$(QJSC): $(OBJDIR)/qjsc.host.o \
-    $(patsubst %.o, %.host.o, $(QJS_LIB_OBJS))
-	$(HOST_CC) $(LDFLAGS) -o $@ $^ $(HOST_LIBS)
+#$(QJSC): $(OBJDIR)/qjsc.host.o \
+#    $(patsubst %.o, %.host.o, $(QJS_LIB_OBJS))
+#	$(HOST_CC) $(LDFLAGS) -o $@ $^ $(HOST_LIBS)
 
 endif #CROSS_PREFIX
 
-QJSC_DEFINES:=-DCONFIG_CC=\"$(QJSC_CC)\" -DCONFIG_PREFIX=\"$(prefix)\"
-ifdef CONFIG_LTO
-QJSC_DEFINES+=-DCONFIG_LTO
-endif
-QJSC_HOST_DEFINES:=-DCONFIG_CC=\"$(HOST_CC)\" -DCONFIG_PREFIX=\"$(prefix)\"
+#QJSC_DEFINES:=-DCONFIG_CC=\"$(QJSC_CC)\" -DCONFIG_PREFIX=\"$(prefix)\"
+#ifdef CONFIG_LTO
+#QJSC_DEFINES+=-DCONFIG_LTO
+#endif
+#QJSC_HOST_DEFINES:=-DCONFIG_CC=\"$(HOST_CC)\" -DCONFIG_PREFIX=\"$(prefix)\"
+#
+#$(OBJDIR)/qjsc.o: CFLAGS+=$(QJSC_DEFINES)
+#$(OBJDIR)/qjsc.host.o: CFLAGS+=$(QJSC_HOST_DEFINES)
 
-$(OBJDIR)/qjsc.o: CFLAGS+=$(QJSC_DEFINES)
-$(OBJDIR)/qjsc.host.o: CFLAGS+=$(QJSC_HOST_DEFINES)
+#qjs32: $(patsubst %.o, %.m32.o, $(QJS_OBJS))
+#	$(CC) -m32 $(LDFLAGS) $(LDEXPORT) -o $@ $^ $(LIBS)
+#
+#qjs32_s: $(patsubst %.o, %.m32s.o, $(QJS_OBJS))
+#	$(CC) -m32 $(LDFLAGS) -o $@ $^ $(LIBS)
+#	@size $@
 
-qjs32: $(patsubst %.o, %.m32.o, $(QJS_OBJS))
-	$(CC) -m32 $(LDFLAGS) $(LDEXPORT) -o $@ $^ $(LIBS)
-
-qjs32_s: $(patsubst %.o, %.m32s.o, $(QJS_OBJS))
-	$(CC) -m32 $(LDFLAGS) -o $@ $^ $(LIBS)
-	@size $@
-
-qjscalc: qjs
-	ln -sf $< $@
+#qjscalc: qjs
+#	ln -sf $< $@
 
 ifdef CONFIG_LTO
 LTOEXT=.lto
@@ -233,11 +238,11 @@ libquickjs.a: $(patsubst %.o, %.nolto.o, $(QJS_LIB_OBJS))
 	$(AR) rcs $@ $^
 endif # CONFIG_LTO
 
-repl.c: $(QJSC) repl.js
-	$(QJSC) -c -o $@ -m repl.js
+#repl.c: $(QJSC) repl.js
+#	$(QJSC) -c -o $@ -m repl.js
 
-qjscalc.c: $(QJSC) qjscalc.js
-	$(QJSC) -fbignum -c -o $@ qjscalc.js
+#qjscalc.c: $(QJSC) qjscalc.js
+#	$(QJSC) -fbignum -c -o $@ qjscalc.js
 
 ifneq ($(wildcard unicode/UnicodeData.txt),)
 $(OBJDIR)/libunicode.o $(OBJDIR)/libunicode.m32.o $(OBJDIR)/libunicode.m32s.o \
@@ -290,7 +295,7 @@ unicode_gen: $(OBJDIR)/unicode_gen.host.o $(OBJDIR)/cutils.host.o libunicode.c u
 
 clean:
 	rm -f repl.c qjscalc.c out.c
-	rm -f *.a *.o *.d *~ unicode_gen regexp_test $(PROGS)
+	rm -f *.a *.o *.wasm *.d *~ unicode_gen regexp_test $(PROGS)
 	rm -f hello.c test_fib.c
 	rm -f examples/*.so tests/*.so
 	rm -rf $(OBJDIR)/ *.dSYM/ qjs-debug
@@ -321,38 +326,38 @@ ifdef CONFIG_BIGNUM
 HELLO_OPTS+=-fno-bigint
 endif
 
-hello.c: $(QJSC) $(HELLO_SRCS)
-	$(QJSC) -e $(HELLO_OPTS) -o $@ $(HELLO_SRCS)
+#hello.c: $(QJSC) $(HELLO_SRCS)
+#	$(QJSC) -e $(HELLO_OPTS) -o $@ $(HELLO_SRCS)
 
-ifdef CONFIG_M32
-examples/hello: $(OBJDIR)/hello.m32s.o $(patsubst %.o, %.m32s.o, $(QJS_LIB_OBJS))
-	$(CC) -m32 $(LDFLAGS) -o $@ $^ $(LIBS)
-else
-examples/hello: $(OBJDIR)/hello.o $(QJS_LIB_OBJS)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
-endif
+#ifdef CONFIG_M32
+#examples/hello: $(OBJDIR)/hello.m32s.o $(patsubst %.o, %.m32s.o, $(QJS_LIB_OBJS))
+#	$(CC) -m32 $(LDFLAGS) -o $@ $^ $(LIBS)
+#else
+#examples/hello: $(OBJDIR)/hello.o $(QJS_LIB_OBJS)
+#	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+#endif
 
 # example of static JS compilation with modules
 HELLO_MODULE_SRCS=examples/hello_module.js
 HELLO_MODULE_OPTS=-fno-string-normalize -fno-map -fno-promise -fno-typedarray \
            -fno-typedarray -fno-regexp -fno-json -fno-eval -fno-proxy \
            -fno-date -m
-examples/hello_module: $(QJSC) libquickjs$(LTOEXT).a $(HELLO_MODULE_SRCS)
-	$(QJSC) $(HELLO_MODULE_OPTS) -o $@ $(HELLO_MODULE_SRCS)
+#examples/hello_module: $(QJSC) libquickjs$(LTOEXT).a $(HELLO_MODULE_SRCS)
+#	$(QJSC) $(HELLO_MODULE_OPTS) -o $@ $(HELLO_MODULE_SRCS)
 
 # use of an external C module (static compilation)
 
-test_fib.c: $(QJSC) examples/test_fib.js
-	$(QJSC) -e -M examples/fib.so,fib -m -o $@ examples/test_fib.js
+#test_fib.c: $(QJSC) examples/test_fib.js
+#	$(QJSC) -e -M examples/fib.so,fib -m -o $@ examples/test_fib.js
 
-examples/test_fib: $(OBJDIR)/test_fib.o $(OBJDIR)/examples/fib.o libquickjs$(LTOEXT).a
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+#examples/test_fib: $(OBJDIR)/test_fib.o $(OBJDIR)/examples/fib.o libquickjs$(LTOEXT).a
+#	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-examples/fib.so: $(OBJDIR)/examples/fib.pic.o
-	$(CC) $(LDFLAGS) -shared -o $@ $^
+#examples/fib.so: $(OBJDIR)/examples/fib.pic.o
+#	$(CC) $(LDFLAGS) -shared -o $@ $^
 
-examples/point.so: $(OBJDIR)/examples/point.pic.o
-	$(CC) $(LDFLAGS) -shared -o $@ $^
+#examples/point.so: $(OBJDIR)/examples/point.pic.o
+#	$(CC) $(LDFLAGS) -shared -o $@ $^
 
 ###############################################################################
 # documentation
@@ -401,7 +406,7 @@ endif
 ifdef CONFIG_BIGNUM
 	./qjs --bignum tests/test_op_overloading.js
 	./qjs --bignum tests/test_bignum.js
-	./qjs --qjscalc tests/test_qjscalc.js
+#	./qjs --qjscalc tests/test_qjscalc.js
 endif
 ifdef CONFIG_M32
 	./qjs32 tests/test_closure.js

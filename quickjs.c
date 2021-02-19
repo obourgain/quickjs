@@ -46,6 +46,9 @@
 #include "libbf.h"
 #endif
 
+#define FE_DOWNWARD FE_TONEAREST
+#define FE_UPWARD FE_TONEAREST
+
 #define OPTIMIZE         1
 #define SHORT_OPCODES    1
 #if defined(EMSCRIPTEN)
@@ -67,9 +70,9 @@
 
 /* define to include Atomics.* operations which depend on the OS
    threads */
-#if !defined(EMSCRIPTEN)
-#define CONFIG_ATOMICS
-#endif
+//#if !defined(EMSCRIPTEN)
+//#define CONFIG_ATOMICS
+//#endif
 
 #if !defined(EMSCRIPTEN)
 /* enable stack limitation */
@@ -1682,7 +1685,8 @@ static inline size_t js_def_malloc_usable_size(void *ptr)
     return malloc_usable_size(ptr);
 #else
     /* change this to `return 0;` if compilation fails */
-    return malloc_usable_size(ptr);
+    return 0;
+//    return malloc_usable_size(ptr);
 #endif
 }
 
@@ -1756,7 +1760,8 @@ static const JSMallocFunctions def_malloc_funcs = {
     (size_t (*)(const void *))malloc_usable_size,
 #else
     /* change this to `NULL,` if compilation fails */
-    malloc_usable_size,
+    NULL,
+//    malloc_usable_size,
 #endif
 };
 
